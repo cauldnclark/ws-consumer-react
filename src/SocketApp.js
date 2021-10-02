@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import io from "socket.io-client";
 
-const websocket = new WebSocket("ws://localhost:8088");
+const socket = io("http://localhost:3000");
 
-export function Candidate({ name = "", votes = 0, handleClick = () => {} }) {
+function Candidate({ name = "", votes = 0, handleClick = () => {} }) {
   return (
     <h2>
       <button onClick={handleClick} type="button">
@@ -13,7 +14,7 @@ export function Candidate({ name = "", votes = 0, handleClick = () => {} }) {
   );
 }
 
-function App() {
+function SocketApp() {
   const [yorme, updateYorme] = useState(0);
   const [pacman, updatePacman] = useState(0);
   const [ping, updatePing] = useState(0);
@@ -29,15 +30,21 @@ function App() {
   ];
 
   useEffect(() => {
-    websocket.onmessage = function onMessage(event) {
-      const data = JSON.parse(event.data);
+    console.log("bbb");
+    socket.on("connect", () => {
+      console.log("Connected to websocket server");
+    });
 
+    socket.on("events", (data) => {
       updateYorme(data[YORME]);
       updatePacman(data[PACMAN]);
       updatePing(data[PING]);
-    };
+    });
 
-    return () => websocket.close();
+    return () => {
+      console.log("closing");
+      return socket.close();
+    };
   }, []);
 
   const handleClickVote = (candidate = "") => {
@@ -46,7 +53,7 @@ function App() {
       count: 1,
     };
 
-    return websocket.send(JSON.stringify(payload));
+    return socket.emit("vote", payload);
   };
 
   return (
@@ -64,4 +71,4 @@ function App() {
   );
 }
 
-export default App;
+export default SocketApp;
